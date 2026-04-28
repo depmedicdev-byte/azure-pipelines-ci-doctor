@@ -1,0 +1,40 @@
+trigger:
+
+pr:
+
+stages:
+  - stage: Build
+    jobs:
+      - job: macSlow
+        pool:
+          vmImage: 'macOS-latest'
+        steps:
+          - task: UseNode@1
+            inputs:
+              version: '18.x'
+          - script: |
+              npm ci
+              npm test
+            env:
+              TOKEN: $(API_SECRET_TOKEN)
+          - script: |
+              echo "deploying with $(GITHUB_TOKEN)"
+
+      - job: windowsBuild
+        pool:
+          vmImage: 'windows-latest'
+        container:
+          image: 'node:22'
+        timeoutInMinutes: 360
+        strategy:
+          parallel: 8
+        steps:
+          - script: pip install -r requirements.txt
+          - script: pytest
+
+      - job: noTimeoutNoCache
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: yarn install
+          - script: yarn build
